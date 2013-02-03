@@ -1,3 +1,10 @@
+<?php
+include('classes/RaspberryPi.class.php');
+include('classes/HumanReadable.class.php');
+
+$rpi = new RaspberryPi();
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,100 +53,46 @@
 
         <?php
 
-        /*******************************/
-        /**         SETTINGS          **/
-        /*******************************/
-        $username = 'frank';
-
-        /*******************************/
-        /**         UTILS             **/
-        /*******************************/
-
-        function readableSeconds($secs)
-        {
-            $units = array(
-                "week"   => 7*24*3600,
-                "day"    =>   24*3600,
-                "hour"   =>      3600,
-                "minute" =>        60,
-                "second" =>         1,
-            );
-
-            // specifically handle zero
-            if ( $secs == 0 ) return "0 seconds";
-
-            $s = "";
-
-            foreach ( $units as $name => $divisor ) {
-                if ( $quot = intval($secs / $divisor) ) {
-                    $s .= "$quot $name";
-                    $s .= (abs($quot) > 1 ? "s" : "") . ", ";
-                    $secs -= $quot * $divisor;
-                }
-            }
-
-            return substr($s, 0, -2);
-        }
-
-        function readableSize( $bytes )
-        {
-            $types = array( 'B', 'KB', 'MB', 'GB', 'TB' );
-            for( $i = 0; $bytes >= 1024 && $i < ( count( $types ) -1 ); $bytes /= 1024, $i++ );
-            return( round( $bytes, 2 ) . " " . $types[$i] );
-        }
-
-        /*******************************/
-        /**         TABLE             **/
-        /*******************************/
-
         $toPrint = array();
-        $toPrint['Hostname'] = getHostName();
-        $toPrint['Server IP'] = "<strong>Local: </strong>" . $_SERVER['SERVER_ADDR'] .
-        '<br /><strong>External: </strong>' . file_get_contents('http://ipecho.net/plain');
-        $toPrint['PHP Version'] = phpversion();
+
+
+        $toPrint[] = array('Hostname', $rpi->getHostName());
+        $toPrint[] = array('Server IP', '<strong>Local: </strong>' . $rpi->getLocalIP() . '</strong><br /><strong>External:</strong>' . $rpi->getExternalIP());
+        $toPrint[] = array('PHP Version', $rpi->getPHPVersion());
+
+        $loadAverage = $rpi->getLoad();
 
         $loadAverage = sys_getloadavg();
-        $averages = '<strong>1 Minute: </strong>' . $loadAverage[0] .
+        $toPrint[] = array('System load', '<strong>1 Minute: </strong>' . $loadAverage[0] .
             '<br/><strong>5 Minutes: </strong>' . $loadAverage[1] .
-            '<br/><strong>15 Minutes: </strong>' . $loadAverage[2];
-        $toPrint['System load'] = $averages;
+            '<br/><strong>15 Minutes: </strong>' . $loadAverage[2]);
 
 
-        $uptime = explode(' ', file_get_contents('/proc/uptime'));
-        $toPrint['Uptime'] = readableSeconds(intval($uptime[0]));
+        $toPrint[] = array('Uptime', HumanReadable::readableSeconds($rpi->getUptime()));
 
-        $freeSpace = disk_free_space('/');
-        $totalSpace = disk_total_space('/');
-        $toPrint['Disk space free'] = readableSize($freeSpace) . ' /' . ' ' . readableSize($totalSpace);
+        $toPrint[] = array('Disk space free', HumanReadable::readableSize($rpi->getDiskSpace()) . ' / ' . HumanReadable::readableSize($rpi->getDiskSize()));
 
 
-        $data = explode("\n", file_get_contents("/proc/meminfo"));
-        $meminfo = array();
-        foreach ($data as $line) {
-            list($key, $val) = explode(":", $line);
-            $meminfo[$key] = substr(trim($val), 0, strlen(trim($val)) - 3);
-        }
+        $meminfo = $rpi->getMemInfo();
         $usedMemory = $meminfo['MemTotal'] - $meminfo['MemFree'];
-        $toPrint['Memory used'] = $usedMemory . ' kB / ' . $meminfo['MemTotal'] . ' kB';
+        $toPrint[] = array('Memory used', $usedMemory . ' kB / ' . $meminfo['MemTotal'] . ' kB');
 
-        /**         vcgencmd          **/
+        if($rpi->hasRoot()){
+            $toPrint[] = array('Temperature', $rpi->getTemperature() . '&deg;C');
 
-        $temp = shell_exec('sudo /opt/vc/bin/vcgencmd measure_temp | cut -c "6-9"');
-        $toPrint['Temperature'] = $temp . '&deg;C';
+            $toPrint[] = array('GPU clock', $rpi->getGPUClock() . ' MHz');
+            $toPrint[] = array('CPU clock', $rpi->getCPUClock() . ' MHz');
 
-        $coreClock = explode('=', shell_exec('sudo /opt/vc/bin/vcgencmd measure_clock core'));
-        $armClock = explode('=', shell_exec('sudo /opt/vc/bin/vcgencmd measure_clock arm'));
-        $toPrint['GPU clock'] = intval($coreClock[1] / 1000000) . ' MHz';
-        $toPrint['CPU clock'] = intval($armClock[1] / 1000000) . ' MHz';
+            $toPrint[] = array('Core Voltage', $rpi->getVoltage() . ' V');
+        }
 
-        $voltage = shell_exec('sudo vcgencmd measure_volts | cut -c "6-9"') . ' V';
-        $toPrint['Core Voltage'] = $voltage;
 
         /*******************************/
         /**         PRINTING          **/
         /*******************************/
-        foreach ($toPrint as $key => $value)
-            echo '<tr><td><strong>' . $key . '</strong></td><td>' . $value . '</td></tr>';
+        foreach ($toPrint as $row){
+            echo '<tr><td><strong>' . $row[0] . '</strong></td><td>' . $row[1] . '</td></tr>';
+        }
         ?>
 
     </table>

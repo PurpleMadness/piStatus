@@ -1,13 +1,17 @@
 <?php
+include('classes/RaspberryPi.class.php');
+include('classes/HumanReadable.class.php');
+
+$rpi = new RaspberryPi();
 
 $action = $_GET['action'];
 
 if($_GET['action'] == 'pistatusmenu'){
     // requires sudo and www-data in "video" group
-    $temp = shell_exec('sudo /opt/vc/bin/vcgencmd measure_temp | cut -c "6-9"');
+    $temp = $rpi->getTemperature();
     $tempString = trim($temp) . " °C";
 
-    $hostname = getHostName();
+    $hostname = $rpi->getHostName();
 
     $json = array('hostname' => $hostname, 'value' => $tempString);
 
