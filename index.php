@@ -57,7 +57,7 @@ $rpi = new RaspberryPi();
 
 
         $toPrint[] = array('Hostname', $rpi->getHostName());
-        $toPrint[] = array('Server IP', '<strong>Local: </strong>' . $rpi->getLocalIP() . '</strong><br /><strong>External:</strong>' . $rpi->getExternalIP());
+        $toPrint[] = array('Server IP', '<strong>Local: </strong>' . $rpi->getLocalIP() . '</strong><br /><strong>External: </strong>' . $rpi->getExternalIP());
         $toPrint[] = array('PHP Version', $rpi->getPHPVersion());
 
         $loadAverage = $rpi->getLoad();
