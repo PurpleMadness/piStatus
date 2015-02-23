@@ -34,4 +34,24 @@ class HumanReadable
         for($i = 0; $bytes >= 1024 && $i < ( count( $types ) -1 ); $bytes /= 1024, $i++);
         return (round( $bytes, 2 ) . " " . $types[$i] );
     }
+
+    public static function getPiVersionFromRevision($revision) 
+    {
+        $revisions = array(
+            '0002' => 'Model B (rev 1)',
+            '0003' => 'Model B (rev 1)',
+            '0004' => 'Model B',
+            '0005' => 'Model B',
+            '0006' => 'Model B',
+            '0007' => 'Model A',
+            '0008' => 'Model A',
+            '0009' => 'Model A',
+            '0010' => 'Model B+',
+            '0011' => 'Compute Module',
+            '0012' => 'Model A+',
+            'a01041' => '2 Model B',
+        );
+
+        return 'Raspberry Pi ' . $revisions[$revision];
+    }
 }

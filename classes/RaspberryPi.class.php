@@ -16,7 +16,7 @@ class RaspberryPi
     }
 
     public function shell($command){
-        return shell_exec($command);
+        return trim(shell_exec($command));
     }
 
     public function getHostName(){
@@ -62,6 +62,12 @@ class RaspberryPi
         return $meminfo;
     }
 
+    public function getPiModel(){
+        $revisionRaw = $this->shell('cat /proc/cpuinfo | grep Revision');
+        $revision = trim(substr(strstr($revisionRaw, ':'), 1));
+        return HumanReadable::getPiVersionFromRevision($revision);
+    }
+
     // start vcgencmd (sudo) commands
 
     public function vcgenCommand($command){
@@ -88,7 +94,9 @@ class RaspberryPi
         return $this->vcgenCommand('measure_volts | cut -c "6-9"');
     }
 
-
+    public function getCPUCores(){
+        return $this->shell('nproc');
+    }
 
 
 }
